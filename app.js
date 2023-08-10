@@ -3,7 +3,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const _= require("lodash");
+require('dotenv').config(); // Load environment variables from .env file - use when modifying locally otherwise keep commented out
+
 
 const app = express();
 
@@ -12,7 +13,7 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
-mongoose.connect("mongodb://127.0.0.1:27017/todolistDB", {useNewUrlParser: true})
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true })
   .then(function() {
     console.log("MongoDB connected successfully");
   })
@@ -65,7 +66,7 @@ app.get("/", function (req, res) {
 });
 
 app.get("/:listName", function(req, res) {
-  const listName = _.capitalize (req.params.listName);
+  const listName = req.params.listName;
 
   List.findOne({ name: listName })
     .then(function(foundList) {
@@ -112,32 +113,19 @@ app.post("/", function(req, res){
 }
 
 });
+
 app.post("/delete", function(req, res){
   const checkedItemId = req.body.checkbox;
-  const listName = req.body.listName;
-
-  if (listName === "Today") {
-    Item.deleteOne({ _id: checkedItemId })
-      .then(function() {
-        console.log("Successfully deleted item with ID " + checkedItemId);
-        res.redirect("/");
-      })
-      .catch(function(err) {
-        console.log(err);
-        res.redirect("/");
-      });
-  } else {
-    List.findOneAndUpdate({name: listName}, {$pull: {items: {_id: checkedItemId}}})
-    .then(foundList => {
-        res.redirect("/" + listName);
+  Item.deleteOne({ _id: checkedItemId })
+    .then(function() {
+      console.log("Successfully deleted item with ID " + checkedItemId);
+      res.redirect("/");
     })
-    .catch(err => {
-        console.error(err);
-        res.redirect("/" + listName);
+    .catch(function(err) {
+      console.log(err);
+      res.redirect("/");
     });
-  }
 });
-
 
 app.get("/about", function(req, res){
   res.render("about");
@@ -146,4 +134,3 @@ app.get("/about", function(req, res){
 app.listen(3000, function() {
   console.log("Server started on port 3000");
 });
-
